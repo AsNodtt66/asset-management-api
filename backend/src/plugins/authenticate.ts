@@ -1,11 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 
-declare global {
-  namespace FastifyInstance {
-    interface FastifyInstance {
-      authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-    }
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 

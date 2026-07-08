@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import * as userController from '../controllers/user.controller';
+import { authorize } from '../middlewares/rbac';
 
 export default async function (app: FastifyInstance) {
   // Public routes
@@ -44,7 +45,7 @@ export default async function (app: FastifyInstance) {
 
   // Protected routes
   app.post('/logout', { 
-    preHandler: [app.authenticate],
+    preHandler: [app.authenticate, authorize('ADMIN')],
     schema: {
       description: 'Logout user',
       tags: ['Auth'],
@@ -70,7 +71,7 @@ export default async function (app: FastifyInstance) {
   }, userController.createRole);
 
   app.get('/roles', { 
-    preHandler: [app.authenticate],
+    preHandler: [app.authenticate, authorize('ADMIN')],
     schema: {
       description: 'Get all roles',
       tags: ['Roles'],
@@ -89,7 +90,7 @@ export default async function (app: FastifyInstance) {
   }, userController.getUsers);
 
   app.put('/users/:id/role', { 
-    preHandler: [app.authenticate],
+    preHandler: [app.authenticate, authorize('ADMIN')],
     schema: {
       description: 'Update user role (admin only)',
       tags: ['Users'],

@@ -5,12 +5,14 @@ import swaggerUi from '@fastify/swagger-ui';
 import jwt from '@fastify/jwt';
 import authPlugin from './plugins/authenticate';
 import userRoutes from './routes/user.routes';
-import assetRoutes from './routes/asset.routes';
-import warehouseRoutes from './routes/warehouse.routes';
-import maintenanceRoutes from './routes/maintenance.routes';
-import issueRoutes from './routes/issue.routes';
-import dashboardRoutes from './routes/dashboard.routes';
-import reportRoutes from './routes/report.routes';
+
+// KOMENTARI DULU KARENA FILE-FILE INI BELUM ADA DI FOLDER 'routes'
+// import assetRoutes from './routes/asset.routes';
+// import warehouseRoutes from './routes/warehouse.routes';
+// import maintenanceRoutes from './routes/maintenance.routes';
+// import issueRoutes from './routes/issue.routes';
+// import dashboardRoutes from './routes/dashboard.routes';
+// import reportRoutes from './routes/report.routes';
 
 export async function buildApp() {
   const app = Fastify({ 
@@ -72,14 +74,16 @@ export async function buildApp() {
     },
   });
 
-  // Routes Registration
+  // Routes Registration - HANYA NYALAKAN USER/AUTH ROUTES
   await app.register(userRoutes, { prefix: '/api/auth' });
-  await app.register(assetRoutes, { prefix: '/api/assets' });
-  await app.register(warehouseRoutes, { prefix: '/api/warehouse' });
-  await app.register(maintenanceRoutes, { prefix: '/api/maintenance' });
-  await app.register(issueRoutes, { prefix: '/api/issues' });
-  await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
-  await app.register(reportRoutes, { prefix: '/api/reports' });
+  
+  // KOMENTARI REGISTRASI RUTE YANG BELUM ADA
+  // await app.register(assetRoutes, { prefix: '/api/assets' });
+  // await app.register(warehouseRoutes, { prefix: '/api/warehouse' });
+  // await app.register(maintenanceRoutes, { prefix: '/api/maintenance' });
+  // await app.register(issueRoutes, { prefix: '/api/issues' });
+  // await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+  // await app.register(reportRoutes, { prefix: '/api/reports' });
 
   // Health Check
   app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -103,7 +107,6 @@ export async function buildApp() {
   // Global error handler
   app.setErrorHandler(
     async (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
-      // Log the error
       app.log.error({
         message: error.message,
         stack: error.stack,
@@ -112,7 +115,6 @@ export async function buildApp() {
         method: request.method,
       });
 
-      // Handle validation errors
       if (error.statusCode === 400) {
         return reply.status(400).send({
           statusCode: 400,
@@ -121,7 +123,6 @@ export async function buildApp() {
         });
       }
 
-      // Handle authentication errors
       if (error.statusCode === 401) {
         return reply.status(401).send({
           statusCode: 401,
@@ -130,7 +131,6 @@ export async function buildApp() {
         });
       }
 
-      // Handle not found errors
       if (error.statusCode === 404) {
         return reply.status(404).send({
           statusCode: 404,
@@ -139,7 +139,6 @@ export async function buildApp() {
         });
       }
 
-      // Generic server error
       return reply.status(error.statusCode || 500).send({
         statusCode: error.statusCode || 500,
         error: error.name || 'Internal Server Error',
