@@ -2,6 +2,7 @@
   "compilerOptions": {
     // Suppress deprecation warning (temporary fix)
     "ignoreDeprecations": "6.0",
+    "types": ["node"],
     
     // Project Settings
     "target": "ES2020",
@@ -40,6 +41,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*"
+  ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

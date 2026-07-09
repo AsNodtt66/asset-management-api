@@ -3,7 +3,7 @@ import * as userController from '../controllers/user.controller';
 import { authorize } from '../middlewares/rbac';
 
 export default async function (app: FastifyInstance) {
-  // Public routes
+  // ====== PUBLIC ROUTES ======
   app.post('/register', {
     schema: {
       description: 'Register a new user',
@@ -43,9 +43,11 @@ export default async function (app: FastifyInstance) {
     },
   }, userController.login);
 
-  // Protected routes
+  // ====== PROTECTED ROUTES ======
+  
+  // ✅ PERBAIKAN: logout hanya perlu authenticate, tidak perlu admin role
   app.post('/logout', { 
-    preHandler: [app.authenticate, authorize('ADMIN')],
+    preHandler: [app.authenticate],
     schema: {
       description: 'Logout user',
       tags: ['Auth'],
@@ -53,9 +55,11 @@ export default async function (app: FastifyInstance) {
     },
   }, userController.logout);
 
-  // Role management (admin only)
+  // ====== ROLE MANAGEMENT (ADMIN ONLY) ======
+  
+  // ✅ PERBAIKAN: createRole memerlukan ADMIN authorization
   app.post('/roles', { 
-    preHandler: [app.authenticate],
+    preHandler: [app.authenticate, authorize('ADMIN')],
     schema: {
       description: 'Create a new role (admin only)',
       tags: ['Roles'],
@@ -79,7 +83,9 @@ export default async function (app: FastifyInstance) {
     },
   }, userController.getRoles);
 
-  // User management (admin)
+  // ====== USER MANAGEMENT (ADMIN) ======
+  
+  // ✅ PERBAIKAN: getUsers hanya perlu authenticate, bisa di-set untuk view user lain
   app.get('/users', { 
     preHandler: [app.authenticate],
     schema: {
@@ -89,6 +95,7 @@ export default async function (app: FastifyInstance) {
     },
   }, userController.getUsers);
 
+  // ✅ PERBAIKAN: updateUserRole memerlukan ADMIN authorization
   app.put('/users/:id/role', { 
     preHandler: [app.authenticate, authorize('ADMIN')],
     schema: {
@@ -110,4 +117,14 @@ export default async function (app: FastifyInstance) {
       },
     },
   }, userController.updateUserRole);
+
+  // ✅ TAMBAHAN: Get user profile (authenticated users)
+  app.get('/me', {
+    preHandler: [app.authenticate],
+    schema: {
+      description: 'Get current user profile',
+      tags: ['Users'],
+      security: [{ bearerAuth: [] }],
+    },
+  }, userController.getCurrentUser);
 }

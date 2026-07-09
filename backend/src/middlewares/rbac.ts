@@ -1,18 +1,15 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import prisma from '../utils/prisma';
 
 export function authorize(...allowedRoles: string[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = request.user as any;
+    const user = request.user;
 
-    const userWithRole = await prisma.user.findUnique({
-      where: { id: user.userId },
-      include: { role: true }
-    });
-
-    if (!userWithRole || !allowedRoles.includes(userWithRole.role.name)) {
-      // WAJIB menggunakan return agar eksekusi berhenti di sini
-      return reply.status(403).send({ error: 'Forbidden: Access denied' });
+    if (!user || !user.role || !allowedRoles.includes(user.role)) {
+      return reply.status(403).send({ 
+        statusCode: 403,
+        error: 'Forbidden',
+        message: 'Access denied: Anda tidak memiliki hak akses untuk halaman ini' 
+      });
     }
   };
 }
