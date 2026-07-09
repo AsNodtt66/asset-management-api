@@ -4,13 +4,13 @@ import { RouterProvider } from "react-router-dom";
 
 import "./index.css";
 
-import { AppProvider } from "./providers";
 import { router } from "./routes";
+import { AppProvider } from "./providers";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <AppProvider>
-      <RouterProvider router={router} />
-    </AppProvider>
-  </React.StrictMode>
+    <React.StrictMode>
+        <AppProvider>
+            <RouterProvider router={router} />
+        </AppProvider>
+    </React.StrictMode>
 );
