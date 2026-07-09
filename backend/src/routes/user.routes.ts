@@ -3,39 +3,52 @@ import * as userController from '../controllers/user.controller';
 import { authorize } from '../middlewares/rbac';
 
 export default async function (app: FastifyInstance) {
+  // Semua rute di file ini membutuhkan autentikasi token JWT global
+  app.addHook('preHandler', app.authenticate);
+
   // ====== ROLE MANAGEMENT (ADMIN ONLY) ======
   app.get('/roles', { 
-    preHandler: [app.authenticate, authorize('ADMIN')],
+    preHandler: [authorize('ADMIN')],
     schema: {
-      description: 'Get all roles',
+      description: 'Mendapatkan semua daftar role yang tersedia (Admin Only)',
       tags: ['Roles'],
       security: [{ bearerAuth: [] }],
     } as any,
   }, userController.getRoles);
 
   // ====== USER MANAGEMENT ======
+  
+  // Ambil daftar pengguna global (Proteksi Kritis: Ditambahkan ADMIN Only)
   app.get('/', { 
-    preHandler: [app.authenticate],
+    preHandler: [authorize('ADMIN')],
     schema: {
-      description: 'Get all users',
+      description: 'Mendapatkan data seluruh pengguna terdaftar (Admin Only)',
       tags: ['Users'],
       security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'number', default: 1 },
+          limit: { type: 'number', default: 10 }
+        }
+      }
     } as any,
   }, userController.getUsers);
 
+  // Ambil data profil diri sendiri (Bisa diakses oleh semua role terautentikasi)
   app.get('/me', { 
-    preHandler: [app.authenticate],
     schema: {
-      description: 'Get current user profile',
+      description: 'Mendapatkan profil data diri pengguna saat ini',
       tags: ['Users'],
       security: [{ bearerAuth: [] }],
     } as any,
   }, userController.getMe);
 
+  // Mengubah role user lain
   app.put('/:id/role', { 
-    preHandler: [app.authenticate, authorize('ADMIN')],
+    preHandler: [authorize('ADMIN')],
     schema: {
-      description: 'Update user role (admin only)',
+      description: 'Mengubah tingkat level/role hak akses pengguna lain (Admin Only)',
       tags: ['Users'],
       security: [{ bearerAuth: [] }],
       params: {
