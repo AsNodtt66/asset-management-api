@@ -2,116 +2,349 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcryptjs';
 import prisma from '../utils/prisma';
 
+// ✅ PERBAIKAN: 1. Registrasi User Baru (IMPROVED)
 export async function register(request: FastifyRequest, reply: FastifyReply) {
-  const { email, password, name, roleId } = request.body as any;
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { email, password: hashed, name, roleId },
-    select: { id: true, email: true, name: true, role: true }
-  });
-  reply.send(user);
-}
-
-export async function login(request: FastifyRequest, reply: FastifyReply) {
-  const { email, password } = request.body as any;
-  const user = await prisma.user.findUnique({ where: { email }, include: { role: true } });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return reply.status(401).send({ error: 'Invalid credentials' });
-  }
-  const token = await reply.jwtSign({ userId: user.id, role: user.role.name });
-  reply.send({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role.name } });
-}
-
-export async function logout(request: FastifyRequest, reply: FastifyReply) {
-  // Simple logout: client harus hapus token. Bisa tambahkan blacklist di Redis.
-  reply.send({ message: 'Logged out successfully' });
-}
-// Tambahkan di bagian bawah user.controller.ts
-
-export async function createRole(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { name } = request.body as { name: string };
-    
-    // Validasi apakah role sudah ada
-    const existingRole = await prisma.role.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' } } // Case-insensitive check
-    });
+    const { email, password, name, roleId = 1 } = request.body as any;
 
-    if (existingRole) {
-      return reply.status(400).send({ error: 'Role already exists' });
+    // ✅ Validasi input
+    if (!email || !password || !name) {
+      return reply.status(400).send({ 
+        error: 'Missing required fields: email, password, name' 
+      });
     }
 
-    const newRole = await prisma.role.create({
-      data: { name }
+    if (password.length < 6) {
+      return reply.status(400).send({ 
+        error: 'Password must be at least 6 characters' 
+      });
+    }
+
+    // Validasi apakah email sudah terdaftar
+    const existingUser = await prisma.user.findUnique({ 
+      where: { email } 
+    });
+    
+    if (existingUser) {
+      return reply.status(409).send({ 
+        error: 'Email already registered' 
+      });
+    }
+
+    // Validasi roleId jika dikirim
+    const role = await prisma.role.findUnique({ 
+      where: { id: Number(roleId) } 
+    });
+    
+    if (!role) {
+      return reply.status(400).send({ 
+        error: 'Invalid roleId. Role does not exist.' 
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: { 
+        email, 
+        password: hashedPassword, 
+        name, 
+        roleId: Number(roleId) 
+      },
+      select: { 
+        id: true, 
+        email: true, 
+        name: true, 
+        role: { 
+          select: { id: true, name: true } 
+        },
+        createdAt: true
+      }
     });
 
-    return reply.status(201).send(newRole);
+    return reply.status(201).send({
+      message: 'User registered successfully',
+      user
+    });
   } catch (error) {
-    return reply.status(500).send({ error: 'Internal server error' });
+    console.error('Registration error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error during registration' 
+    });
   }
 }
 
-export async function getRoles(request: FastifyRequest, reply: FastifyReply) {
+// ✅ PERBAIKAN: 2. Login User (IMPROVED)
+export async function login(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const roles = await prisma.role.findMany({
-      orderBy: { id: 'asc' }
+    const { email, password } = request.body as any;
+
+    // ✅ Validasi input
+    if (!email || !password) {
+      return reply.status(400).send({ 
+        error: 'Missing required fields: email, password' 
+      });
+    }
+    
+    // Cari user dengan role-nya
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: { role: true }
     });
-    return reply.send(roles);
+
+    // ✅ Validasi user exists
+    if (!user) {
+      return reply.status(401).send({ 
+        error: 'Invalid email or password' 
+      });
+    }
+
+    // ✅ Validasi password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return reply.status(401).send({ 
+        error: 'Invalid email or password' 
+      });
+    }
+
+    // ✅ Generate JWT token dengan payload yang sesuai
+    const token = await reply.jwtSign({ 
+      userId: user.id, 
+      email: user.email,
+      role: user.role.name 
+    });
+    
+    return reply.send({ 
+      message: 'Login successful',
+      token, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name, 
+        role: user.role.name,
+        createdAt: user.createdAt
+      } 
+    });
   } catch (error) {
-    return reply.status(500).send({ error: 'Internal server error' });
+    console.error('Login error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error during login' 
+    });
   }
 }
 
-export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
+// ✅ PERBAIKAN: 3. Logout User
+export async function logout(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const users = await prisma.user.findMany({
+    // ✅ Logout hanya clear token di client-side, server-side tidak perlu do anything
+    return reply.send({ 
+      message: 'Logged out successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error during logout' 
+    });
+  }
+}
+
+// ✅ PERBAIKAN: 4. Get Current User Profile
+export async function getCurrentUser(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const userId = (request.user as any)?.userId;
+
+    if (!userId) {
+      return reply.status(401).send({ 
+        error: 'Unauthorized' 
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
       select: {
         id: true,
         email: true,
         name: true,
-        roleId: true,
         role: {
-          select: {
-            name: true
-          }
+          select: { id: true, name: true }
         },
-        createdAt: true // Asumsi field ini ada di skema Anda
-      },
-      orderBy: { name: 'asc' }
+        createdAt: true,
+        updatedAt: true
+      }
     });
-    return reply.send(users);
+
+    if (!user) {
+      return reply.status(404).send({ 
+        error: 'User not found' 
+      });
+    }
+
+    return reply.send(user);
   } catch (error) {
-    return reply.status(500).send({ error: 'Internal server error' });
+    console.error('Get current user error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error fetching user profile' 
+    });
   }
 }
 
+// ✅ PERBAIKAN: 5. Membuat Role Baru (Admin Only)
+export async function createRole(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { name } = request.body as any;
+
+    // ✅ Validasi input
+    if (!name || typeof name !== 'string') {
+      return reply.status(400).send({ 
+        error: 'Role name is required and must be a string' 
+      });
+    }
+
+    // Normalize nama role ke uppercase
+    const normalizedName = name.toUpperCase().trim();
+
+    if (normalizedName.length === 0) {
+      return reply.status(400).send({ 
+        error: 'Role name cannot be empty' 
+      });
+    }
+
+    // Cek duplikasi nama role
+    const existingRole = await prisma.role.findUnique({ 
+      where: { name: normalizedName } 
+    });
+
+    if (existingRole) {
+      return reply.status(409).send({ 
+        error: 'Role already exists' 
+      });
+    }
+
+    // Create role
+    const role = await prisma.role.create({
+      data: { name: normalizedName }
+    });
+    
+    return reply.status(201).send({
+      message: 'Role created successfully',
+      role
+    });
+  } catch (error) {
+    console.error('Create role error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error creating role' 
+    });
+  }
+}
+
+// ✅ PERBAIKAN: 6. Mengambil Semua Daftar Role
+export async function getRoles(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const roles = await prisma.role.findMany({
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { users: true }
+        },
+        createdAt: true,
+        updatedAt: true
+      },
+      orderBy: { id: 'asc' }
+    });
+
+    return reply.send({
+      total: roles.length,
+      roles
+    });
+  } catch (error) {
+    console.error('Get roles error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error fetching roles' 
+    });
+  }
+}
+
+// ✅ PERBAIKAN: 7. Mengambil Semua Daftar User (Admin Only)
+export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // ✅ Optional: Pagination
+    const { page = 1, limit = 10 } = request.query as { page?: number; limit?: number };
+    const skip = ((page || 1) - 1) * (limit || 10);
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: {
+            select: { id: true, name: true }
+          },
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { id: 'asc' },
+        skip: skip,
+        take: limit || 10
+      }),
+      prisma.user.count()
+    ]);
+
+    return reply.send({
+      total,
+      page: page || 1,
+      limit: limit || 10,
+      totalPages: Math.ceil(total / (limit || 10)),
+      users
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error fetching users' 
+    });
+  }
+}
+
+// ✅ PERBAIKAN: 8. Mengubah Role User (Admin Only)
 export async function updateUserRole(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = request.params as { id: string };
     const { roleId } = request.body as { roleId: number };
 
-    // Validasi apakah role target valid dan ada di database
+    // ✅ Validasi input
+    if (!id || !roleId) {
+      return reply.status(400).send({ 
+        error: 'Missing required fields: id, roleId' 
+      });
+    }
+
+    // Validasi target role exists
     const targetRole = await prisma.role.findUnique({
       where: { id: Number(roleId) }
     });
 
     if (!targetRole) {
-      return reply.status(404).send({ error: 'Target role not found' });
+      return reply.status(404).send({ 
+        error: 'Target role not found' 
+      });
     }
 
-    // Update role user
+    // Convert string id ke number dan update user role
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id: Number(id) }, 
       data: { roleId: Number(roleId) },
       select: {
         id: true,
         email: true,
         name: true,
         role: {
-          select: {
-            name: true
-          }
-        }
+          select: { id: true, name: true }
+        },
+        updatedAt: true
       }
     });
 
@@ -120,10 +353,16 @@ export async function updateUserRole(request: FastifyRequest, reply: FastifyRepl
       user: updatedUser
     });
   } catch (error: any) {
-    // Menangani error jika ID user tidak ditemukan di database (P2025)
+    // ✅ Handle Prisma specific errors
     if (error.code === 'P2025') {
-      return reply.status(404).send({ error: 'User not found' });
+      return reply.status(404).send({ 
+        error: 'User not found' 
+      });
     }
-    return reply.status(500).send({ error: 'Internal server error' });
+    
+    console.error('Update user role error:', error);
+    return reply.status(500).send({ 
+      error: 'Internal server error updating user role' 
+    });
   }
 }

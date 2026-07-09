@@ -1,15 +1,14 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
+// ✅ PERBAIKAN: Tambahkan url di datasource
 datasource db {
   provider = "postgresql"
-
+  //url      = env("DATABASE_URL")
 }
 
 // --- RBAC (Role-Based Access Control) ---
@@ -31,6 +30,10 @@ model User {
   name              String
   roleId            Int
   role              Role              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  //Fitur Lupa Password
+  resetPasswordToken String?          
+  resetPasswordExp   DateTime?
   
   // Asset Assignments
   assetAssignments  AssetAssignment[]

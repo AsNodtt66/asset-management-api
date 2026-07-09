@@ -1,12 +1,12 @@
 import Fastify, { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
-import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
 import jwt from '@fastify/jwt';
 import authPlugin from './plugins/authenticate';
 import userRoutes from './routes/user.routes';
 
-// KOMENTARI DULU KARENA FILE-FILE INI BELUM ADA DI FOLDER 'routes'
+// Di-comment sementara agar project bisa di-build tanpa error file missing
+// import swagger from '@fastify/swagger';
+// import swaggerUi from '@fastify/swagger-ui';
 // import assetRoutes from './routes/asset.routes';
 // import warehouseRoutes from './routes/warehouse.routes';
 // import maintenanceRoutes from './routes/maintenance.routes';
@@ -28,94 +28,35 @@ export async function buildApp() {
     },
   });
 
-  // Register plugins
-  await app.register(cors, { 
-    origin: process.env.CORS_ORIGIN || true, 
-    credentials: true 
+  // ====== REGISTER PLUGINS ======
+
+  // JWT Plugin (Wajib berada di atas agar decorator token siap digunakan)
+  await app.register(jwt, {
+    secret: process.env.JWT_SECRET || 'super-secret-key'
   });
 
-  await app.register(jwt, { 
-    secret: process.env.JWT_SECRET || 'your-secret-key-change-this',
-    sign: {
-      expiresIn: '24h',
-    },
-  });
-
+  // Custom Authentication Plugin
   await app.register(authPlugin);
-
-  // Swagger Documentation
-  await app.register(swagger, {
-    openapi: {
-      info: { 
-        title: 'Asset Management API', 
-        version: '1.0.0',
-        description: 'Complete Asset Management System API',
-      },
-      servers: [
-        { url: `http://localhost:${process.env.PORT || 3000}`, description: 'Development' },
-      ],
-      components: {
-        securitySchemes: { 
-          bearerAuth: { 
-            type: 'http', 
-            scheme: 'bearer', 
-            bearerFormat: 'JWT' 
-          } 
-        }
-      }
-    }
-  });
-
-  await app.register(swaggerUi, { 
-    routePrefix: '/docs',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: false,
-    },
-  });
-
-  // Routes Registration - HANYA NYALAKAN USER/AUTH ROUTES
-  await app.register(userRoutes, { prefix: '/api/auth' });
   
-  // KOMENTARI REGISTRASI RUTE YANG BELUM ADA
-  // await app.register(assetRoutes, { prefix: '/api/assets' });
-  // await app.register(warehouseRoutes, { prefix: '/api/warehouse' });
-  // await app.register(maintenanceRoutes, { prefix: '/api/maintenance' });
-  // await app.register(issueRoutes, { prefix: '/api/issues' });
-  // await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
-  // await app.register(reportRoutes, { prefix: '/api/reports' });
-
-  // Health Check
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
-    return { 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    };
+  // CORS Plugin
+  await app.register(cors, { 
+    origin: process.env.CORS_ORIGIN || '*' 
   });
 
-  // Root endpoint
-  app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    return {
-      name: 'Asset Management API',
-      version: '1.0.0',
-      docs: '/docs',
-      health: '/health',
-    };
-  });
+  // ====== REGISTER ROUTES ======
 
-  // Global error handler
+  // Registrasi route authentication dengan prefix URL
+  await app.register(import('./routes/auth/auth.routes'), { prefix: '/api/auth' });
+  
+  // Register User Routes bawaan
+  await app.register(userRoutes, { prefix: '/api/users' });
+
+  // ====== GLOBAL ERROR HANDLER ======
   app.setErrorHandler(
     async (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
-      app.log.error({
-        message: error.message,
-        stack: error.stack,
-        statusCode: error.statusCode || 500,
-        url: request.url,
-        method: request.method,
-      });
+      app.log.error(error);
 
-      if (error.statusCode === 400) {
+      if (error.validation) {
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
@@ -131,11 +72,11 @@ export async function buildApp() {
         });
       }
 
-      if (error.statusCode === 404) {
-        return reply.status(404).send({
-          statusCode: 404,
-          error: 'Not Found',
-          message: 'Resource not found',
+      if (error.statusCode === 403) {
+        return reply.status(403).send({
+          statusCode: 403,
+          error: 'Forbidden',
+          message: 'You do not have permission to access this resource',
         });
       }
 
@@ -149,16 +90,14 @@ export async function buildApp() {
     }
   );
 
-  // Not found handler
-  app.setNotFoundHandler(
-    (request: FastifyRequest, reply: FastifyReply) => {
-      return reply.status(404).send({
-        statusCode: 404,
-        error: 'Not Found',
-        message: `Route ${request.method} ${request.url} not found`,
-      });
-    }
-  );
+  // ====== NOT FOUND HANDLER ======
+  app.setNotFoundHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+    return reply.status(404).send({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Resource not found',
+    });
+  });
 
   return app;
 }
