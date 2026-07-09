@@ -5,8 +5,8 @@ import prisma from '../utils/prisma';
 // ✅ PERBAIKAN: 1. Registrasi User Baru (IMPROVED)
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { email, password, name, roleId = 1 } = request.body as any;
-
+    const { email, password, name} = request.body as any;
+    const roleId = 2;
     // ✅ Validasi input
     if (!email || !password || !name) {
       return reply.status(400).send({ 
@@ -136,7 +136,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
 }
 
 // ✅ PERBAIKAN: 3. Logout User
-export async function logout(request: FastifyRequest, reply: FastifyReply) {
+export async function logout(_request: FastifyRequest, reply: FastifyReply) {
   try {
     // ✅ Logout hanya clear token di client-side, server-side tidak perlu do anything
     return reply.send({ 
@@ -151,25 +151,29 @@ export async function logout(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-// ✅ PERBAIKAN: 4. Get Current User Profile
-export async function getCurrentUser(request: FastifyRequest, reply: FastifyReply) {
+// ✅ PERBAIKAN: 4. Get Current User Profile (Diubah menjadi getMe)
+export async function getMe(request: FastifyRequest, reply: FastifyReply) {
   try {
     const userId = (request.user as any)?.userId;
 
     if (!userId) {
-      return reply.status(401).send({ 
-        error: 'Unauthorized' 
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'User data not found in token'
       });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: Number(userId) },
       select: {
         id: true,
         email: true,
         name: true,
         role: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true
+          }
         },
         createdAt: true,
         updatedAt: true
@@ -177,16 +181,21 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
     });
 
     if (!user) {
-      return reply.status(404).send({ 
-        error: 'User not found' 
+      return reply.status(404).send({
+        error: 'Not Found',
+        message: 'User profile no longer exists'
       });
     }
 
-    return reply.send(user);
-  } catch (error) {
+    return reply.send({
+      message: 'Fetch current profile successful',
+      user
+    });
+  } catch (error: any) {
     console.error('Get current user error:', error);
-    return reply.status(500).send({ 
-      error: 'Internal server error fetching user profile' 
+    return reply.status(500).send({
+      error: 'Internal Server Error',
+      message: error.message
     });
   }
 }
@@ -241,7 +250,7 @@ export async function createRole(request: FastifyRequest, reply: FastifyReply) {
 }
 
 // ✅ PERBAIKAN: 6. Mengambil Semua Daftar Role
-export async function getRoles(request: FastifyRequest, reply: FastifyReply) {
+export async function getRoles(_request: FastifyRequest, reply: FastifyReply) {
   try {
     const roles = await prisma.role.findMany({
       select: {

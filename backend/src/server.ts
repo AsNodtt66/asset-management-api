@@ -20,7 +20,8 @@ async function start() {
     // Start server
     const PORT = parseInt(process.env.PORT || '3000', 10);
     const HOST = process.env.HOST || '0.0.0.0';
-
+    console.log(app.printRoutes());
+    
     await app.listen({ port: PORT, host: HOST });
 
     console.log(`

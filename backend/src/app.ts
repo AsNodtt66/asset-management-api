@@ -2,11 +2,9 @@ import Fastify, { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import authPlugin from './plugins/authenticate';
-import userRoutes from './routes/user.routes';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 
-// Di-comment sementara agar project bisa di-build tanpa error file missing
-// import swagger from '@fastify/swagger';
-// import swaggerUi from '@fastify/swagger-ui';
 // import assetRoutes from './routes/asset.routes';
 // import warehouseRoutes from './routes/warehouse.routes';
 // import maintenanceRoutes from './routes/maintenance.routes';
@@ -43,13 +41,53 @@ export async function buildApp() {
     origin: process.env.CORS_ORIGIN || '*' 
   });
 
+  // Swagger Plugin
+  await app.register(swagger, {
+    swagger: {
+      info: {
+        title: 'Asset Management System',
+        description: 'API documentation for Asset Management System',
+        version: '1.0.0',
+      },
+      host: `localhost:${process.env.PORT || 3000}`,
+      schemes: ['http'],
+      consumes: ['application/json'],
+      produces: ['application/json'],
+      tags: [
+        { name: 'Auth', description: 'Authentication endpoints' },
+        { name: 'Users', description: 'User management' },
+        { name: 'Roles', description: 'Role management' },
+      ],
+      securityDefinitions: {
+        bearerAuth: {
+          type: 'apiKey',
+          name: 'Authorization',
+          in: 'header',
+          description: 'Enter JWT token with Bearer prefix (e.g. "Bearer <token>")',
+        },
+      },
+      security: [{ bearerAuth: [] }],
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      docExpansion: 'full',
+      deepLinking: false,
+    },
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
+  });
+
   // ====== REGISTER ROUTES ======
 
-  // Registrasi route authentication dengan prefix URL
+  // Registrasi route dengan prefix URL secara konsisten
   await app.register(import('./routes/auth/auth.routes'), { prefix: '/api/auth' });
+  await app.register(import('./routes/user.routes'), { prefix: '/api/users' });
   
-  // Register User Routes bawaan
-  await app.register(userRoutes, { prefix: '/api/users' });
+  // NOTE: Jika file role.routes.ts sudah ada, daftarkan di sini:
+  // await app.register(import('./routes/role.routes'), { prefix: '/roles' });
 
   // ====== GLOBAL ERROR HANDLER ======
   app.setErrorHandler(
@@ -98,6 +136,5 @@ export async function buildApp() {
       message: 'Resource not found',
     });
   });
-
-  return app;
+ return app;
 }

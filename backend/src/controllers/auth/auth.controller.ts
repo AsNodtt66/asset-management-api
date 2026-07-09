@@ -65,7 +65,7 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
   }
 };
 
-export const forgotPasswordHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+export const forgetPasswordHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const { email } = request.body as any;
 
   try {
