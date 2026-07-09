@@ -53,7 +53,7 @@ export async function buildApp() {
 
   // ====== GLOBAL ERROR HANDLER ======
   app.setErrorHandler(
-    async (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+    async (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {
       app.log.error(error);
 
       if (error.validation) {
@@ -91,7 +91,7 @@ export async function buildApp() {
   );
 
   // ====== NOT FOUND HANDLER ======
-  app.setNotFoundHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  app.setNotFoundHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     return reply.status(404).send({
       statusCode: 404,
       error: 'Not Found',
