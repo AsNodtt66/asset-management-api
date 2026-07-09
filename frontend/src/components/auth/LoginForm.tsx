@@ -1,15 +1,26 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLogin } from "../../hooks/useLogin";
+import type { LoginFormData } from "../../schemas/auth.schema";
 
 export default function LoginForm() {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useLogin();
 
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const onSubmit = (data: LoginFormData) => {
+    if (
+      data.nip === "100001" &&
+      data.password === "admin123"
+    ) {
+      navigate("/dashboard");
+      return;
+    }
+
+    alert("NIP atau Password salah!");
   };
 
   return (
@@ -17,54 +28,73 @@ export default function LoginForm() {
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-5"
     >
+      {/* NIP */}
+
       <div>
-        <label>Email</label>
+
+        <label className="font-medium">
+          NIP
+        </label>
 
         <input
-          {...register("email")}
-          className="w-full rounded-lg border p-3 mt-1"
-          placeholder="Masukkan email"
+          {...register("nip")}
+          className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-600 focus:outline-none"
+          placeholder="Masukkan NIP"
         />
 
-        {errors.email && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.email.message}
+        {errors.nip && (
+          <p className="mt-1 text-sm text-red-500">
+            {errors.nip.message}
           </p>
         )}
+
       </div>
 
+      {/* PASSWORD */}
+
       <div>
-        <label>Password</label>
+
+        <label className="font-medium">
+          Password
+        </label>
 
         <input
           type="password"
           {...register("password")}
-          className="w-full rounded-lg border p-3 mt-1"
-          placeholder="Masukkan password"
+          className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-600 focus:outline-none"
+          placeholder="Masukkan Password"
         />
 
         {errors.password && (
-          <p className="text-red-500 text-sm mt-1">
+          <p className="mt-1 text-sm text-red-500">
             {errors.password.message}
           </p>
         )}
-        
+
       </div>
 
+      {/* FORGOT PASSWORD */}
+
       <div className="flex justify-end">
-  <Link
-    to="/forgot-password"
-    className="text-sm text-blue-600 hover:underline"
-  >
-    Lupa Password?
-  </Link>
-</div>
+
+        <Link
+          to="/forgot-password"
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Lupa Password?
+        </Link>
+
+      </div>
+
+      {/* BUTTON */}
 
       <button
-        className="w-full rounded-lg bg-blue-600 text-white py-3 hover:bg-blue-700"
+        type="submit"
+        className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
       >
         Login
       </button>
+
     </form>
   );
 }

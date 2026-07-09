@@ -1,41 +1,61 @@
-import StatisticCard from "../../components/dashboard/StatisticCard";
-
 export default function DashboardPage() {
   return (
-
     <div>
 
-      <h1 className="text-3xl font-bold mb-8">
+      <h2 className="text-3xl font-bold">
 
-        Dashboard
+        Dashboard Asset
 
-      </h1>
+      </h2>
 
-      <div className="grid grid-cols-4 gap-5">
+      <p className="text-gray-500 mt-2">
 
-        <StatisticCard
-          title="Total Asset"
-          value={250}
-        />
+        Selamat datang di Sistem Manajemen Asset PT Pindad.
 
-        <StatisticCard
-          title="Warehouse"
-          value={8}
-        />
+      </p>
 
-        <StatisticCard
-          title="Maintenance"
-          value={12}
-        />
+      <div className="grid grid-cols-4 gap-5 mt-8">
 
-        <StatisticCard
-          title="Issues"
-          value={5}
-        />
+        <Card title="Total Asset" value="1.250"/>
+
+        <Card title="Warehouse" value="6"/>
+
+        <Card title="Maintenance" value="15"/>
+
+        <Card title="Issues" value="4"/>
 
       </div>
 
     </div>
+  );
+}
+
+function Card({
+  title,
+  value,
+}:{
+  title:string;
+  value:string;
+}){
+
+  return(
+
+    <div className="bg-white rounded-xl shadow p-6">
+
+      <p className="text-gray-500">
+
+        {title}
+
+      </p>
+
+      <h1 className="text-3xl font-bold mt-3">
+
+        {value}
+
+      </h1>
+
+    </div>
 
   );
+
 }

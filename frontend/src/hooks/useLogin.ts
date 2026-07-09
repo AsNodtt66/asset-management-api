@@ -11,7 +11,7 @@ export function useLogin() {
     resolver: zodResolver(loginSchema),
 
     defaultValues: {
-      email: "",
+      nip: "",
       password: "",
     },
   });
