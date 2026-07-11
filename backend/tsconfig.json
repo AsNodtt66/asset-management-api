@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    // Suppress deprecation warning (temporary fix)
-    "ignoreDeprecations": "6.0",
     "types": ["node"],
     
     // Project Settings
