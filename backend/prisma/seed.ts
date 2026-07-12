@@ -31,8 +31,9 @@ async function main() {
   // Ditambahkan field 'name' sesuai dengan kebutuhan schema.prisma Anda 
   await prisma.user.upsert({
     where: { email: 'admin@mail.com' }, // Unik berdasarkan email 
-    update: {},
+    update: { nip: '100001' },
     create: {
+      nip: '100001',
       email: 'admin@mail.com',
       password: adminPassword,
       name: 'Administrator Utama', // <--- Ditambahkan agar sesuai skema 
@@ -42,8 +43,9 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'user@mail.com' }, // Unik berdasarkan email 
-    update: {},
+    update: { nip: '100002' },
     create: {
+      nip: '100002',
       email: 'user@mail.com',
       password: userPassword,
       name: 'Regular User', // <--- Ditambahkan agar sesuai skema 

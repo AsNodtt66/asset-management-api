@@ -24,6 +24,7 @@ model Role {
 
 model User {
   id                Int               @id @default(autoincrement())
+  nip               String?           @unique
   email             String            @unique
   password          String
   name              String
@@ -49,6 +50,7 @@ model User {
   updatedAt         DateTime          @updatedAt
 
   @@index([roleId])
+  @@index([nip])
   @@index([email])
 }
 

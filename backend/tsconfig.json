@@ -4,11 +4,11 @@
     
     // Project Settings
     "target": "ES2020",
-    "module": "commonjs",
+    "module": "nodenext",
     "lib": ["ES2020"],
     
     // Module Resolution - FIXED (gunakan 'node' bukan 'node10')
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     
     // Output Settings
     "outDir": "./dist",

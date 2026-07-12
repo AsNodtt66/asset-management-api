@@ -5,14 +5,19 @@ import prisma from '../utils/prisma';
 // 1. Registrasi User Baru (Melalui endpoint /auth/register)
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { email, password, name } = request.body as any;
+    const { nip, email, password, name } = request.body as {
+      nip: string;
+      email: string;
+      password: string;
+      name: string;
+    };
     const defaultRoleId = 2; // Default role: USER sesuai Database Seeding
 
-    if (!email || !password || !name) {
+    if (!nip || !email || !password || !name) {
       return reply.status(400).send({ 
         statusCode: 400,
         error: 'Bad Request',
-        message: 'Field email, password, dan name wajib diisi' 
+        message: 'Field NIP, email, password, dan name wajib diisi' 
       });
     }
 
@@ -24,12 +29,19 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { nip: nip.trim() },
+          { email: email.trim().toLowerCase() },
+        ],
+      },
+    });
     if (existingUser) {
       return reply.status(409).send({ 
         statusCode: 409,
         error: 'Conflict',
-        message: 'Email sudah terdaftar di sistem' 
+        message: 'NIP atau email sudah terdaftar di sistem' 
       });
     }
 
@@ -46,14 +58,16 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
 
     const user = await prisma.user.create({
       data: { 
-        email, 
+        nip: nip.trim(),
+        email: email.trim().toLowerCase(),
         password: hashedPassword, 
         name, 
         roleId: defaultRoleId 
       },
       select: { 
         id: true, 
-        email: true, 
+        nip: true,
+        email: true,
         name: true, 
         role: { select: { id: true, name: true } },
         createdAt: true
@@ -84,6 +98,7 @@ export async function getMe(request: FastifyRequest, reply: FastifyReply) {
       where: { id: Number(userId) },
       select: {
         id: true,
+        nip: true,
         email: true,
         name: true,
         role: { select: { id: true, name: true } },
@@ -127,6 +142,7 @@ export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
       prisma.user.findMany({
         select: {
           id: true,
+          nip: true,
           email: true,
           name: true,
           role: { select: { id: true, name: true } },
@@ -218,6 +234,7 @@ export async function updateUserRole(request: FastifyRequest, reply: FastifyRepl
       data: { roleId: Number(roleId) },
       select: {
         id: true,
+        nip: true,
         email: true,
         name: true,
         role: { select: { id: true, name: true } },
