@@ -4,11 +4,21 @@ import crypto from 'crypto';
 import prisma from '../../utils/prisma';
 
 export const loginHandler = async (request: FastifyRequest, reply: FastifyReply) => {
-  const { email, password } = request.body as any;
+  const { identifier, password } = request.body as {
+    identifier: string;
+    password: string;
+  };
+
+  const normalizedIdentifier = identifier.trim();
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { nip: normalizedIdentifier },
+          { email: normalizedIdentifier.toLowerCase() },
+        ],
+      },
       include: { role: true },
     });
 
@@ -16,7 +26,7 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
       return reply.status(401).send({
         statusCode: 401,
         error: 'Unauthorized',
-        message: 'Email atau password yang Anda masukkan salah',
+        message: 'NIP/email atau password yang Anda masukkan salah',
       });
     }
 
@@ -25,12 +35,13 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
       return reply.status(401).send({
         statusCode: 401,
         error: 'Unauthorized',
-        message: 'Email atau password yang Anda masukkan salah',
+        message: 'NIP/email atau password yang Anda masukkan salah',
       });
     }
 
     const token = await reply.jwtSign({
       userId: user.id,
+      nip: user.nip,
       email: user.email,
       role: user.role.name,
     });
@@ -42,6 +53,7 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
         token,
         user: {
           id: user.id,
+          nip: user.nip,
           email: user.email,
           name: user.name,
           role: user.role.name,

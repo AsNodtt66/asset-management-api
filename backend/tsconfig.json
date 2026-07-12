@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
-    // Suppress deprecation warning (temporary fix)
-    "ignoreDeprecations": "6.0",
     "types": ["node"],
     
     // Project Settings
     "target": "ES2020",
-    "module": "commonjs",
+    "module": "nodenext",
     "lib": ["ES2020"],
     
     // Module Resolution - FIXED (gunakan 'node' bukan 'node10')
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     
     // Output Settings
     "outDir": "./dist",

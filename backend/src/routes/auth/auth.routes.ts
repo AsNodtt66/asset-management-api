@@ -10,8 +10,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
       tags: ['Auth'],
       body: {
         type: 'object',
-        required: ['email', 'password', 'name'],
+        required: ['nip', 'email', 'password', 'name'],
         properties: {
+          nip: { type: 'string', minLength: 1 },
           email: { type: 'string', format: 'email' },
           password: { type: 'string', minLength: 6 },
           name: { type: 'string' }
@@ -27,10 +28,14 @@ export default async function authRoutes(fastify: FastifyInstance) {
       tags: ['Auth'],
       body: {
         type: 'object',
-        required: ['email', 'password'],
+        required: ['identifier', 'password'],
         properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string' }
+          identifier: {
+            type: 'string',
+            minLength: 1,
+            description: 'NIP atau email pengguna',
+          },
+          password: { type: 'string', minLength: 1 }
         }
       }
     } as any

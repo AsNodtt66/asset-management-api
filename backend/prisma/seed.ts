@@ -1,7 +1,11 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcryptjs';
+import pg from 'pg';
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
   console.log('🌱 Memulai proses seeding database...');
@@ -27,8 +31,9 @@ async function main() {
   // Ditambahkan field 'name' sesuai dengan kebutuhan schema.prisma Anda 
   await prisma.user.upsert({
     where: { email: 'admin@mail.com' }, // Unik berdasarkan email 
-    update: {},
+    update: { nip: '100001' },
     create: {
+      nip: '100001',
       email: 'admin@mail.com',
       password: adminPassword,
       name: 'Administrator Utama', // <--- Ditambahkan agar sesuai skema 
@@ -38,8 +43,9 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'user@mail.com' }, // Unik berdasarkan email 
-    update: {},
+    update: { nip: '100002' },
     create: {
+      nip: '100002',
       email: 'user@mail.com',
       password: userPassword,
       name: 'Regular User', // <--- Ditambahkan agar sesuai skema 
@@ -57,4 +63,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

@@ -1,0 +1,17 @@
+# Dependency
+node_modules/
+
+# Environment / secret
+.env
+.env.*
+!.env.example
+
+# Build & test
+dist/
+coverage/
+
+# Log dan file editor
+*.log
+.vscode/
+.idea/
+.DS_Store
